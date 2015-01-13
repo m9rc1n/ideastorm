@@ -8,7 +8,7 @@ App.info({
 });
 
 App.icons({
-  // iOSs
+  // iOS
   'iphone': 'resources/icons/icon-60x60.png',
   'iphone_2x': 'resources/icons/icon-60x60@2x.png',
   'ipad': 'resources/icons/icon-72x72.png',
