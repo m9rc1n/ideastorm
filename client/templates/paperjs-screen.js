@@ -19,403 +19,299 @@ Template.paperjsScreen.rendered = function() {
         console.log("upupupupapapapapa " + firstRender);
         firstRender = false;
     }
-    console.log("upupupupapapapap222a " + firstRender);
+    var NARDOVE = NARDOVE || {};
 
-    //window.onload = function () {
+    NARDOVE.Main = (function() {
 
-        console.log("upupupupapapapapa");
+        console.log("----------------------------");
 
-        var Point = {
+        paper.install(window);
+        paper.setup('canvas');
 
-            addPoints : function(a, b) {
-                return new paper.Point(a.x + b.x, a.y + b.y);
-            },
+        var timer = new Date();
+        var addJellyTimer = 0;
+        var jellyCounter = 0;
+        var numJellies = 7;
+        var jellies = [numJellies];
+        var jellyResolution = 14;
 
-            subtractPoints : function(a, b) {
-                return new paper.Point(a.x - b.x, a.y - b.y);
-            },
 
-            multiple : function(a, b) {
-                return new paper.Point(a.x * b, a.y * b);
-            },
+        window.onload = function() {
+            view.onFrame = draw;
+        };
 
-            divide : function(a, b) {
-                return new paper.Point(a.x / b, a.y / b);
-            },
 
-            add : function(a, b) {
-                return new paper.Point(a.x + b, a.y + b);
-            },
+        this.draw = function(event) {
+            if (event.time > addJellyTimer + 6 && jellyCounter < numJellies) {
+                jellySize = Math.random() * 10 + 40;
+                jellies[jellyCounter] = new NARDOVE.Jelly(jellyCounter, jellySize, jellyResolution);
+                jellies[jellyCounter].init();
 
-            subtract : function(a, b) {
-                return new paper.Point(a.x - b, a.y - b);
+                jellyCounter++;
+                addJellyTimer = event.time;
+            }
+
+            if (jellyCounter > 0) {
+                for (var j = 0; j < jellyCounter; j++) {
+                    jellies[j].update(event);
+                }
             }
         };
 
-        // Get a reference to the canvas object
-        var canvas = document.getElementById('canvas');
-        paper.setup(canvas);
-
-        var Boid = paper.Base.extend({
-            initialize: function(position, maxSpeed, maxForce, idea) {
-                var strength = Math.random() * 0.5;
-                this.acceleration = new paper.Point();
-                this.idea = idea;
-                this.vector = Point.multiple(paper.Point.random(), 2);
-                this.vector = Point.subtract(this.vector, 1);
-                this.position = position.clone();
-                this.radius = 30;
-                this.maxSpeed = maxSpeed + strength;
-                this.maxForce = maxForce + strength;
-                this.amount = strength * 10 + 10;
-                this.count = 0;
-                this.createItems();
-            },
-
-            run: function(boids) {
-                this.lastLoc = this.position.clone();
-                if (!groupTogether) {
-                    this.flock(boids);
-                } else {
-                    this.align(boids);
-                }
-                this.borders();
-                this.update();
-                this.calculateTail();
-                this.moveHead();
-            },
-
-            calculateTail: function() {
-                var segments = this.path.segments,
-                    shortSegments = this.shortPath.segments;
-                var speed = this.vector.length;
-                var pieceLength = 5 + speed / 3;
-                var point = this.position;
-                segments[0].point = shortSegments[0].point = point;
-                // Chain goes the other way than the movement
-                var lastVector = Point.multiple(this.vector, -1);
-                for (var i = 1; i < this.amount; i++) {
-                    var vector = Point.subtractPoints(segments[i].point, point);
-                    this.count += speed * 10;
-                    var wave = Math.sin((this.count + i * 3) / 300);
-                    var sway = lastVector.rotate(90).normalize(wave);
-                    var normalizedSway = Point.addPoints(lastVector.normalize(pieceLength), sway);
-                    point = Point.addPoints(point, normalizedSway);
-                    normalizedSway = Point.addPoints(lastVector.normalize(pieceLength), sway);
-                    point = Point.addPoints(point, normalizedSway);
-                    segments[i].point = point;
-                    if (i < 3)
-                        shortSegments[i].point = point;
-                    lastVector = vector;
-                }
-                this.path.smooth();
-            },
-
-            createItems: function() {
-
-                this.head = new paper.Shape.Ellipse({
-                    //center: [0, 0],
-                    //size: [0, 0],
-                    //fillColor: 'black'
-                });
-
-                this.path = new paper.Path({
-                    //strokeColor: 'black',
-                    //strokeWidth: 2,
-                    //strokeCap: 'round'
-                });
-                for (var i = 0; i < this.amount; i++)
-                    this.path.add(new paper.Point());
-
-                this.shortPath = new paper.Path({
-                    //strokeColor: 'black',
-                    //strokeWidth: 4,
-                    //strokeCap: 'round'
-                });
-
-                this.text = new paper.PointText(new paper.Point());
-                this.text.fillColor = 'black';
-                this.text.content = this.idea;
-                this.text.fontSize = "12px";
-
-                for (var i = 0; i < Math.min(3, this.amount); i++)
-                    this.shortPath.add(new paper.Point());
-            },
-
-            moveHead: function() {
-                this.head.position = this.position;
-                this.text.position = this.position;
-                this.head.rotation = this.vector.angle;
-                this.text.rotation = this.vector.angle;
-            },
-
-            // We accumulate a new acceleration each time based on three rules
-            flock: function(boids) {
-                var separation = Point.multiple(this.separate(boids), 3);
-                var alignment = this.align(boids);
-                var cohesion = this.cohesion(boids);
-                this.acceleration = Point.addPoints(Point.addPoints(this.acceleration, separation), Point.addPoints(alignment, cohesion));
-            },
-
-            update: function() {
-                // Update velocity
-                this.vector = Point.addPoints(this.vector, this.acceleration);
-                // Limit speed (vector#limit?)
-                this.vector.length = Math.min(this.maxSpeed, this.vector.length);
-                this.position = Point.addPoints(this.position, this.vector);
-                // Reset acceleration to 0 each cycle
-                this.acceleration = new paper.Point();
-            },
-
-            seek: function(target) {
-                this.acceleration = Point.addPoints(this.acceleration, this.steer(target, false));
-            },
-
-            arrive: function(target) {
-                this.acceleration = Point.addPoints(this.acceleration, this.steer(target, true));
-            },
-
-            borders: function() {
-                var vector = new paper.Point();
-                var position = this.position;
-                var radius = this.radius;
-                var size = paper.view.size;
-                if (position.x < -radius) vector.x = size.width + radius;
-                if (position.y < -radius) vector.y = size.height + radius;
-                if (position.x > size.width + radius) vector.x = -size.width - radius;
-                if (position.y > size.height + radius) vector.y = -size.height - radius;
-                if (!vector.isZero()) {
-                    this.position = Point.addPoints(this.position, vector);
-                    var segments = this.path.segments;
-                    for (var i = 0; i < this.amount; i++) {
-                        segments[i].point = Point.addPoints(segments[i].point, vector);
-                    }
-                }
-            },
-
-            // A method that calculates a steering vector towards a target
-            // Takes a second argument, if true, it slows down as it approaches
-            // the target
-            steer: function(target, slowdown) {
-                var steer, desired = Point.subtractPoints(target, this.position);
-                var distance = desired.length;
-                // Two options for desired vector magnitude
-                // (1 -- based on distance, 2 -- maxSpeed)
-                if (slowdown && distance < 100) {
-                    // This damping is somewhat arbitrary:
-                    desired.length = this.maxSpeed * (distance / 100);
-                } else {
-                    desired.length = this.maxSpeed;
-                }
-                steer = Point.subtractPoints(desired, this.vector);
-                steer.length = Math.min(this.maxForce, steer.length);
-                return steer;
-            },
+    })();
 
 
-            separate: function(boids) {
-                var desiredSeperation = 60;
-                var steer = new paper.Point();
-                var count = 0;
-                // For every boid in the system, check if it's too close
-                for (var i = 0, l = boids.length; i < l; i++) {
-                    var other = boids[i];
-                    var vector = Point.subtractPoints(this.position, other.position);
-                    var distance = vector.length;
-                    if (distance > 0 && distance < desiredSeperation) {
-                        // Calculate vector pointing away from neighbor
-                        steer = Point.addPoints(steer, vector.normalize(1 / distance));
-                        count++;
-                    }
-                }
-                // Average -- divide by how many
-                if (count > 0) {
-                    steer = Point.divide(steer, count);
-                }
-                if (!steer.isZero()) {
-                    // Implement Reynolds: Steering = Desired - Velocity
-                    steer.length = this.maxSpeed;
-                    steer = Point.subtractPoints(steer, this.vector);
-                    steer.length = Math.min(steer.length, this.maxForce);
-                }
-                return steer;
-            },
+    NARDOVE.Jelly = function(id, radius, resolution) {
+        this.path = new Path();
+        this.pathRadius = radius;
+        this.pathSides = resolution;
+        this.pathPoints = [this.pathSides];
+        this.pathPointsNormals = [this.pathSides];
+        this.group = new Group();
 
-            // Alignment
-            // For every nearby boid in the system, calculate the average velocity
-            align: function(boids) {
-                var neighborDist = 25;
-                var steer = new paper.Point();
-                var count = 0;
-                for (var i = 0, l = boids.length; i < l; i++) {
-                    var other = boids[i];
-                    var distance = this.position.getDistance(other.position);
-                    if (distance > 0 && distance < neighborDist) {
-                        steer = Point.addPoints(steer, other.vector);
-                        count++;
-                    }
-                }
+        // Colours courtesy of deliquescence:
+        // http://www.colourlovers.com/palette/38473/boy_meets_girl
+        this.colours = [{s:"#1C4347", f:"#49ACBB"},
+            {s:"#1b3b3a", f:"#61cac8"},
+            {s:"#2d393f", f:"#88a5b3"},
+            {s:"#422b3a", f:"#b0809e"},
+            {s:"#5b263a", f:"#d85c8a"},
+            {s:"#580c23", f:"#ff3775"},
+            {s:"#681635", f:"#EB1962"}];
 
-                if (count > 0)
-                    steer = Point.divide(steer, count);
+        this.pathStyle = {
+            strokeWidth: 5,
+            strokeColor: this.colours[id].s,
+            fillColor: this.colours[id].f
+        };
 
-                if (!steer.isZero()) {
-                    // Implement Reynolds: Steering = Desired - Velocity
-                    steer.length = this.maxSpeed;
-                    steer = Point.subtractPoints(steer, this.vector);
-                    steer.length = Math.min(steer.length, this.maxForce);
-                }
-                return steer;
-            },
+        this.location = new Point(-50, Math.random() * view.size.height);
+        this.velocity = new Point(0, 0);
+        this.acceleration = new Point(0, 0);
 
-            // Cohesion
-            // For the average location (i.e. center) of all nearby boids,
-            // calculate steering vector towards that location
-            cohesion: function(boids) {
-                var neighborDist = 100;
-                var sum = new paper.Point();
-                var count = 0;
-                for (var i = 0, l = boids.length; i < l; i++) {
-                    var other = boids[i];
-                    var distance = this.position.getDistance(other.position);
-                    if (distance > 0 && distance < neighborDist) {
-                        sum = Point.addPoints(sum, other.position); // Add location
-                        count++;
-                    }
-                }
-                if (count > 0) {
-                    sum = Point.divide(sum, count);
-                    // Steer towards the location
-                    return this.steer(sum, false);
-                }
-                return sum;
-            }
-        });
+        this.maxSpeed = Math.random() * 0.1 + 0.15;
+        this.maxTravelSpeed = this.maxSpeed * 3.5;
+        this.maxForce = 0.2;
+        this.wanderTheta = 0;
+        this.orientation = 0;
+        this.lastOrientation = 0;
+        this.lastLocation;
 
-        ///////////////////////////////////////////////////////////////////////////
+        this.tentacles;
+        this.numTentacles = 0;
 
-        var heartPath = new paper.Path('M514.69629,624.70313c-7.10205,-27.02441 -17.2373,-52.39453 -30.40576,-76.10059c-13.17383,-23.70703 -38.65137,-60.52246 -76.44434,-110.45801c-27.71631,-36.64355 -44.78174,-59.89355 -51.19189,-69.74414c-10.5376,-16.02979 -18.15527,-30.74951 -22.84717,-44.14893c-4.69727,-13.39893 -7.04297,-26.97021 -7.04297,-40.71289c0,-25.42432 8.47119,-46.72559 25.42383,-63.90381c16.94775,-17.17871 37.90527,-25.76758 62.87354,-25.76758c25.19287,0 47.06885,8.93262 65.62158,26.79834c13.96826,13.28662 25.30615,33.10059 34.01318,59.4375c7.55859,-25.88037 18.20898,-45.57666 31.95215,-59.09424c19.00879,-18.32178 40.99707,-27.48535 65.96484,-27.48535c24.7373,0 45.69531,8.53564 62.87305,25.5957c17.17871,17.06592 25.76855,37.39551 25.76855,60.98389c0,20.61377 -5.04102,42.08691 -15.11719,64.41895c-10.08203,22.33203 -29.54687,51.59521 -58.40723,87.78271c-37.56738,47.41211 -64.93457,86.35352 -82.11328,116.8125c-13.51758,24.0498 -23.82422,49.24902 -30.9209,75.58594z');
+        // console.log(id);
+        // console.log(this.maxSpeed);
+        // console.log(this.pathRadius);
+        // console.log("---------------------------------------");
+    };
 
-        var boids = [];
-        var groupTogether = false;
 
-        Todos.find({listId: listIdA}, {sort: {createdAt : -1}}).map(function(todo, index) {
-            todo.index = index;
-            var position = new paper.Point(paper.Point.random().x * paper.view.size._width, paper.Point.random().x * paper.view.size._height);
-            boids.push(new Boid(position, 2, 0.01, todo.text));
-        });
+    NARDOVE.Jelly.prototype.init = function() {
+        for (var i = 0; i < this.pathSides; i++) {
+            var theta = (Math.PI * 2) / this.pathSides;
+            var angle = theta * i;
+            var x = Math.cos(angle) * this.pathRadius * 0.7;
+            var y = Math.sin(angle) * this.pathRadius;
 
-        var tool = new paper.Tool();
-
-        //var ideas = project.importSVG(document.getElementById('svg'));
-        //ideas.visible = true; // Turn off the effect of display:none;
-        //ideas.fillColor = 'black';
-        //ideas.strokeColor = 'black';
-
-        // Imported SVG Groups have their applyMatrix flag turned off by
-        // default. This is required for SVG importing to work correctly. Turn
-        // it on now, so we don't have to deal with nested coordinate spaces.
-
-        //for (var index = 0; index < ideas.children.length; ++index) {
-        //    ideas.children[index].applyMatrix = true;
-        //}
-
-        // Resize the words to fit snugly inside the view:
-        //project.activeLayer.fitBounds(view.bounds);
-        //project.activeLayer.scale(0.5);
-
-        var tool = new Tool();
-
-        //tool.onMouseMove = function(event) {
-        //    noGroup.position = event.point;
-        //
-        //    for (var i = 0; i < yesGroup.children.length; i++) {
-        //        for (var j = 0; j < noGroup.children.length; j++) {
-        //            showIntersections(noGroup.children[j], yesGroup.children[i])
-        //        }
-        //    }
-        //};
-
-//    var i = 0;
-
-        //view.onFrame = function(event) {
-
-        //for (var i = 0; i < yesGroup.children.length; i++) {
-        //  for (var j = 0; j < noGroup.children.length; j++) {
-        //      showIntersections(noGroup.children[j], yesGroup.children[i])
-        //  }
-        //}
-        //  };
-
-        var j = 0;
-
-        view.onFrame = function(event) {
-
-            for (var i = 0, l = boids.length; i < l; i++) {
-                if (groupTogether) {
-                    var length = ((i + event.count / 30) % l) / l * heartPath.length;
-                    var point = heartPath.getPointAt(length);
-                    if (point)
-                        boids[i].arrive(point);
-                }
-                boids[i].run(boids);
+            if (angle > 0 && angle < Math.PI) {
+                y -= Math.sin(angle) * (this.pathRadius * 0.6);
+                this.numTentacles++;
             }
 
-            //j++;
-            //if (j != 8) {
-            //    return;
-            //} else {
-            //    j = 0;
-            //}
-            //
-            //for (var index = 0; index < ideas.children.length; ++index) {
-            //    var x = ideas.children[index].position._x;
-            //    var y = ideas.children[index].position._y;
-            //
-            //    if (x > 600) {
-            //        x = -100;
-            //    } else {
-            //        x += Math.random() * index;
-            //    }
-            //
-            //    if (y > 600) {
-            //        y = -100;
-            //    } else {
-            //        y += Math.random() * index;
-            //    }
-            //    ideas.children[index].position = [x, y];
-            //}
-        };
+            var point = new Point(x, y);
 
-        // Reposition the heart path whenever the window is resized:
-        view.onResize = function(event) {
-            heartPath.fitBounds(view.bounds);
-            heartPath.scale(0.5);
-        };
+            this.path.add(point);
+            this.pathPoints[i] = point.clone();
+            this.pathPointsNormals[i] = point.normalize().clone();
+        }
 
-        tool.onMouseDown = function(event) {
-            groupTogether = !groupTogether;
-        };
+        this.path.closed = true;
+        this.path.smooth();
+        this.path.style = this.pathStyle;
+        this.group.addChild(this.path);
 
-        tool.onKeyDown = function(event) {
-            if (event.key == 'space') {
-                var layer = project.activeLayer;
-                layer.selected = !layer.selected;
-                return false;
+
+        // Create tentacles
+        this.tentacles = [this.numTentacles];
+        for (var t = 0; t < this.numTentacles; t++) {
+            this.tentacles[t] = new NARDOVE.Tentacle(7, 4);
+            this.tentacles[t].init();
+            this.tentacles[t].path.strokeColor = this.path.strokeColor;
+            this.tentacles[t].path.strokeWidth = this.path.strokeWidth;
+        }
+    }
+
+
+    NARDOVE.Jelly.prototype.update = function(event) {
+        this.lastLocation = this.location.clone();
+        this.lastOrientation = this.orientation;
+
+        this.velocity.x += this.acceleration.x;
+        this.velocity.y += this.acceleration.y;
+        this.velocity.length = Math.min(this.maxTravelSpeed, this.velocity.length);
+
+        this.location.x += this.velocity.x;
+        this.location.y += this.velocity.y;
+
+        this.acceleration.length = 0;
+
+        // this.path.position = this.location.clone();
+        this.group.position = this.location.clone();
+
+
+        // Rotation alignment
+        var locVector = new Point(this.location.x - this.lastLocation.x,
+            this.location.y - this.lastLocation.y);
+        this.orientation = locVector.angle + 90;
+        // this.path.rotate(this.orientation - this.lastOrientation);
+        this.group.rotate(this.orientation - this.lastOrientation);
+
+        // Expansion Contraction
+        for (var i = 0; i < this.pathSides; i++) {
+            var segmentPoint = this.path.segments[i].point;
+            // var sineSeed = -(event.time * 3 + this.path.segments[i].point.y * 0.5);
+            var sineSeed = -((event.count * this.maxSpeed) + (this.pathPoints[i].y * 0.0375));
+            var normalRotatedPoint = this.pathPointsNormals[i].rotate(this.orientation);
+
+            segmentPoint.x += normalRotatedPoint.x * Math.sin(sineSeed);
+            segmentPoint.y += normalRotatedPoint.y * Math.sin(sineSeed);
+        }
+
+        for (var t = 0; t < this.numTentacles; t++) {
+            this.tentacles[t].anchor.point = this.path.segments[t+1].point;
+            this.tentacles[t].update(this.orientation);
+        }
+
+
+        this.path.smooth();
+        this.wander();
+        this.checkBounds();
+    };
+
+
+    NARDOVE.Jelly.prototype.steer = function(target, slowdown) {
+        var steer;
+        var desired	= new Point(target.x - this.location.x, target.y - this.location.y);
+        var dist = desired.length;
+
+        if (dist > 0) {
+            if (slowdown && dist < 100) {
+                desired.length = (this.maxTravelSpeed) * (dist / 100);
             }
-        };
+            else {
+                desired.length = this.maxTravelSpeed;
+            }
 
-        function showIntersections (path1, path2) {
-            var intersections = path1.getIntersections(path2);
-            for (var i = 0; i < intersections.length; i++) {
-                new Path.Circle({
-                    center: intersections[i].point,
-                    radius: 5,
-                    fillColor: '#009dec'
-                }).removeOnMove();
+            steer = new Point(desired.x - this.velocity.x, desired.y - this.velocity.y);
+            steer.length = Math.min(this.maxForce, steer.length);
+        }
+        else {
+            steer = new Point(0, 0);
+        }
+        return steer;
+    };
+
+
+    NARDOVE.Jelly.prototype.seek = function(target) {
+        var steer = this.steer(target, false);
+        this.acceleration.x += steer.x;
+        this.acceleration.y += steer.y;
+    };
+
+
+    NARDOVE.Jelly.prototype.wander = function() {
+        var wanderR = 5;
+        var wanderD	= 100;
+        var change = 0.05;
+
+        this.wanderTheta += Math.random() * (change * 2) - change;
+
+        var circleLocation = this.velocity.clone();
+        circleLocation = circleLocation.normalize();
+        circleLocation.x *= wanderD;
+        circleLocation.y *= wanderD;
+        circleLocation.x += this.location.x;
+        circleLocation.y += this.location.y;
+
+        var circleOffset = new Point(wanderR * Math.cos(this.wanderTheta), wanderR * Math.sin(this.wanderTheta));
+
+        var target = new Point(circleLocation.x + circleOffset.x, circleLocation.y + circleOffset.y);
+
+        this.seek(target);
+    };
+
+
+    NARDOVE.Jelly.prototype.checkBounds = function() {
+        var offset = 60;
+        if (this.location.x < -offset) {
+            this.location.x = view.size.width + offset;
+            for (var t = 0; t < this.numTentacles; t++) {
+                this.tentacles[t].path.position = this.location.clone();
             }
         }
-    //};
+        if (this.location.x > view.size.width + offset) {
+            this.location.x = -offset;
+            for (var t = 0; t < this.numTentacles; t++) {
+                this.tentacles[t].path.position = this.location.clone();
+            }
+        }
+        if (this.location.y < -offset) {
+            this.location.y = view.size.height + offset;
+            for (var t = 0; t < this.numTentacles; t++) {
+                this.tentacles[t].path.position = this.location.clone();
+            }
+        }
+        if (this.location.y > view.size.height + offset) {
+            this.location.y = -offset;
+            for (var t = 0; t < this.numTentacles; t++) {
+                this.tentacles[t].path.position = this.location.clone();
+            }
+        }
+    };
+
+
+    NARDOVE.Tentacle = function(segments, length) {
+        this.anchor = new Segment();
+        this.path = new Path();
+        this.numSegments = segments;
+        this.segmentLength = Math.random() + length - 1;
+    };
+
+
+    NARDOVE.Tentacle.prototype.init = function() {
+        for (var i = 0; i < this.numSegments; i++) {
+            this.path.add(new Point(0, i * this.segmentLength));
+        }
+
+        this.path.strokeCap = 'round';
+
+        this.anchor = this.path.segments[0];
+    };
+
+
+    NARDOVE.Tentacle.prototype.update = function(orientation) {
+        this.path.segments[1].point = this.anchor.point;
+
+        var dx = this.anchor.point.x - this.path.segments[1].point.x;
+        var dy = this.anchor.point.y - this.path.segments[1].point.y;
+        var angle = Math.atan2(dy, dx) + ((orientation + 90) * (Math.PI / 180));
+
+        this.path.segments[1].point.x += Math.cos(angle);
+        this.path.segments[1].point.y += Math.sin(angle);
+
+        for (var i = 2; i < this.numSegments; i++) {
+            var px = this.path.segments[i].point.x - this.path.segments[i-2].point.x;
+            var py = this.path.segments[i].point.y - this.path.segments[i-2].point.y;
+            var pt = new Point(px, py);
+            var len = pt.length;
+
+            if (len > 0.0) {
+                this.path.segments[i].point.x = this.path.segments[i-1].point.x + (pt.x * this.segmentLength) / len;
+                this.path.segments[i].point.y = this.path.segments[i-1].point.y + (pt.y * this.segmentLength) / len;
+            }
+        }
+    };
 
 };
 
