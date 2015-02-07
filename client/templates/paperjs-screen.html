@@ -1,0 +1,19 @@
+<template name="paperjsScreen">
+    <canvas id="canvas" width="600" height="600" resize=true></canvas>
+    {{#if todosReady}}
+        {{#with _id}}
+            <svg xmlns="http://www.w3.org/2000/svg" height="600" width="600" id="svg" style="display:none">
+            {{#each todos this}}
+                <g id="idea-{{ index }}">
+                    {{> todosItem}}
+                </g>
+            {{else}}
+            {{/each}}
+            </svg>
+        {{/with}}
+    {{else}}
+        <div class="wrapper-message">
+            <div class="title-message">Loading tasks...</div>
+        </div>
+    {{/if}}
+</template>
