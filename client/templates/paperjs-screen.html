@@ -4,7 +4,7 @@
         {{#with _id}}
             <svg xmlns="http://www.w3.org/2000/svg" height="600" width="600" id="svg" style="display:none">
             {{#each todos this}}
-                <g id="idea-{{ index }}">
+                <g id="idea-{{ index }}-{{ _id }}">
                     {{> todosItem}}
                 </g>
             {{else}}

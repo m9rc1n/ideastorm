@@ -9,3 +9,9 @@ insecure
 less
 iron:router@0.9.4
 accounts-password
+accounts-ui
+accounts-facebook
+accounts-github
+accounts-google
+accounts-twitter
+marcinn:paperjs

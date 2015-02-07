@@ -6,6 +6,7 @@ paper.install(window);
 var firstRender = true;
 var listRenderHold = LaunchScreen.hold();
 listFadeInHold = null;
+var listIdA;
 
 Template.paperjsScreen.rendered = function() {
 
@@ -53,9 +54,10 @@ Template.paperjsScreen.rendered = function() {
         paper.setup(canvas);
 
         var Boid = paper.Base.extend({
-            initialize: function(position, maxSpeed, maxForce) {
+            initialize: function(position, maxSpeed, maxForce, idea) {
                 var strength = Math.random() * 0.5;
                 this.acceleration = new paper.Point();
+                this.idea = idea;
                 this.vector = Point.multiple(paper.Point.random(), 2);
                 this.vector = Point.subtract(this.vector, 1);
                 this.position = position.clone();
@@ -107,32 +109,41 @@ Template.paperjsScreen.rendered = function() {
             },
 
             createItems: function() {
+
                 this.head = new paper.Shape.Ellipse({
-                    center: [0, 0],
-                    size: [13, 8],
-                    fillColor: 'pink'
+                    //center: [0, 0],
+                    //size: [0, 0],
+                    //fillColor: 'black'
                 });
 
                 this.path = new paper.Path({
-                    strokeColor: 'red',
-                    strokeWidth: 2,
-                    strokeCap: 'round'
+                    //strokeColor: 'black',
+                    //strokeWidth: 2,
+                    //strokeCap: 'round'
                 });
                 for (var i = 0; i < this.amount; i++)
                     this.path.add(new paper.Point());
 
                 this.shortPath = new paper.Path({
-                    strokeColor: 'black',
-                    strokeWidth: 4,
-                    strokeCap: 'round'
+                    //strokeColor: 'black',
+                    //strokeWidth: 4,
+                    //strokeCap: 'round'
                 });
+
+                this.text = new paper.PointText(new paper.Point());
+                this.text.fillColor = 'black';
+                this.text.content = this.idea;
+                this.text.fontSize = "12px";
+
                 for (var i = 0; i < Math.min(3, this.amount); i++)
                     this.shortPath.add(new paper.Point());
             },
 
             moveHead: function() {
                 this.head.position = this.position;
+                this.text.position = this.position;
                 this.head.rotation = this.vector.angle;
+                this.text.rotation = this.vector.angle;
             },
 
             // We accumulate a new acceleration each time based on three rules
@@ -285,30 +296,30 @@ Template.paperjsScreen.rendered = function() {
         var boids = [];
         var groupTogether = false;
 
-        // Add the boids:
-        for (var i = 0; i < 30; i++) {
+        Todos.find({listId: listIdA}, {sort: {createdAt : -1}}).map(function(todo, index) {
+            todo.index = index;
             var position = new paper.Point(paper.Point.random().x * paper.view.size._width, paper.Point.random().x * paper.view.size._height);
-            boids.push(new Boid(position, 10, 0.05));
-        }
+            boids.push(new Boid(position, 2, 0.01, todo.text));
+        });
 
         var tool = new paper.Tool();
 
-        var ideas = project.importSVG(document.getElementById('svg'));
-        ideas.visible = true; // Turn off the effect of display:none;
-        ideas.fillColor = 'pink';
-        ideas.strokeColor = 'black';
+        //var ideas = project.importSVG(document.getElementById('svg'));
+        //ideas.visible = true; // Turn off the effect of display:none;
+        //ideas.fillColor = 'black';
+        //ideas.strokeColor = 'black';
 
         // Imported SVG Groups have their applyMatrix flag turned off by
         // default. This is required for SVG importing to work correctly. Turn
         // it on now, so we don't have to deal with nested coordinate spaces.
 
-        for (var index = 0; index < ideas.children.length; ++index) {
-            ideas.children[index].applyMatrix = true;
-        }
+        //for (var index = 0; index < ideas.children.length; ++index) {
+        //    ideas.children[index].applyMatrix = true;
+        //}
 
         // Resize the words to fit snugly inside the view:
-        project.activeLayer.fitBounds(view.bounds);
-        project.activeLayer.scale(0.5);
+        //project.activeLayer.fitBounds(view.bounds);
+        //project.activeLayer.scale(0.5);
 
         var tool = new Tool();
 
@@ -347,30 +358,30 @@ Template.paperjsScreen.rendered = function() {
                 boids[i].run(boids);
             }
 
-            j++;
-            if (j != 8) {
-                return;
-            } else {
-                j = 0;
-            }
-
-            for (var index = 0; index < ideas.children.length; ++index) {
-                var x = ideas.children[index].position._x;
-                var y = ideas.children[index].position._y;
-
-                if (x > 600) {
-                    x = -100;
-                } else {
-                    x += Math.random() * index;
-                }
-
-                if (y > 600) {
-                    y = -100;
-                } else {
-                    y += Math.random() * index;
-                }
-                ideas.children[index].position = [x, y];
-            }
+            //j++;
+            //if (j != 8) {
+            //    return;
+            //} else {
+            //    j = 0;
+            //}
+            //
+            //for (var index = 0; index < ideas.children.length; ++index) {
+            //    var x = ideas.children[index].position._x;
+            //    var y = ideas.children[index].position._y;
+            //
+            //    if (x > 600) {
+            //        x = -100;
+            //    } else {
+            //        x += Math.random() * index;
+            //    }
+            //
+            //    if (y > 600) {
+            //        y = -100;
+            //    } else {
+            //        y += Math.random() * index;
+            //    }
+            //    ideas.children[index].position = [x, y];
+            //}
         };
 
         // Reposition the heart path whenever the window is resized:
@@ -415,8 +426,11 @@ Template.paperjsScreen.helpers({
     },
 
     todos: function(listId) {
+        listIdA = listId;
+
         return Todos.find({listId: listId}, {sort: {createdAt : -1}}).map(function(todo, index) {
             todo.index = index;
+
             return todo;
         });
     }
