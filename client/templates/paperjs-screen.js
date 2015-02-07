@@ -16,11 +16,14 @@ Template.paperjsScreen.rendered = function() {
 
         // Handle for launch screen defined in app-body.js
         listRenderHold.release();
-
+        console.log("upupupupapapapapa " + firstRender);
         firstRender = false;
     }
+    console.log("upupupupapapapap222a " + firstRender);
 
-    window.onload = function () {
+    //window.onload = function () {
+
+        console.log("upupupupapapapapa");
 
         var Point = {
 
@@ -412,7 +415,7 @@ Template.paperjsScreen.rendered = function() {
                 }).removeOnMove();
             }
         }
-    };
+    //};
 
 };
 
