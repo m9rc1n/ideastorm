@@ -19,11 +19,9 @@ Template.paperjsScreen.rendered = function() {
         console.log("upupupupapapapapa " + firstRender);
         firstRender = false;
     }
-    var NARDOVE = NARDOVE || {};
+    var maiika = maiika || {};
 
-    NARDOVE.Main = (function() {
-
-        console.log("----------------------------");
+    maiika.Main = (function() {
 
         paper.install(window);
         paper.setup('canvas');
@@ -31,22 +29,29 @@ Template.paperjsScreen.rendered = function() {
         var timer = new Date();
         var addJellyTimer = 0;
         var jellyCounter = 0;
-        var numJellies = 7;
-        var jellies = [numJellies];
+        var numJellies = 0;
         var jellyResolution = 14;
+        var list = [];
 
+        Todos.find({listId: listIdA}, {sort: {createdAt : -1}}).map(function(todo, index) {
+            todo.index = index;
+            numJellies++;
+            list.push(todo);
+        });
+
+        var jellies = [numJellies];
 
         window.onload = function() {
             view.onFrame = draw;
         };
 
-
         this.draw = function(event) {
             if (event.time > addJellyTimer + 6 && jellyCounter < numJellies) {
                 jellySize = Math.random() * 10 + 40;
-                jellies[jellyCounter] = new NARDOVE.Jelly(jellyCounter, jellySize, jellyResolution);
+                var idea = list[jellyCounter];
+                console.log(idea);
+                jellies[jellyCounter] = new maiika.Jelly(jellyCounter, jellySize, jellyResolution, idea);
                 jellies[jellyCounter].init();
-
                 jellyCounter++;
                 addJellyTimer = event.time;
             }
@@ -60,19 +65,31 @@ Template.paperjsScreen.rendered = function() {
 
     })();
 
-
-    NARDOVE.Jelly = function(id, radius, resolution) {
+    maiika.Jelly = function(id, radius, resolution, ideaData) {
         this.path = new Path();
         this.pathRadius = radius;
         this.pathSides = resolution;
         this.pathPoints = [this.pathSides];
         this.pathPointsNormals = [this.pathSides];
         this.group = new Group();
+        this.ideaData = ideaData;
 
         // Colours courtesy of deliquescence:
         // http://www.colourlovers.com/palette/38473/boy_meets_girl
         this.colours = [{s:"#1C4347", f:"#49ACBB"},
             {s:"#1b3b3a", f:"#61cac8"},
+            {s:"#2d393f", f:"#88a5b3"},
+            {s:"#422b3a", f:"#b0809e"},
+            {s:"#5b263a", f:"#d85c8a"},
+            {s:"#580c23", f:"#ff3775"},
+            {s:"#2d393f", f:"#88a5b3"},
+            {s:"#422b3a", f:"#b0809e"},
+            {s:"#5b263a", f:"#d85c8a"},
+            {s:"#580c23", f:"#ff3775"},
+            {s:"#2d393f", f:"#88a5b3"},
+            {s:"#422b3a", f:"#b0809e"},
+            {s:"#5b263a", f:"#d85c8a"},
+            {s:"#580c23", f:"#ff3775"},
             {s:"#2d393f", f:"#88a5b3"},
             {s:"#422b3a", f:"#b0809e"},
             {s:"#5b263a", f:"#d85c8a"},
@@ -100,14 +117,19 @@ Template.paperjsScreen.rendered = function() {
         this.tentacles;
         this.numTentacles = 0;
 
-        // console.log(id);
+        this.text = new PointText(this.location);
+        this.text.justification = 'center';
+        this.text.fillColor = 'black';
+        this.text.content = ideaData.text;
+
+        console.log(id);
         // console.log(this.maxSpeed);
         // console.log(this.pathRadius);
         // console.log("---------------------------------------");
     };
 
 
-    NARDOVE.Jelly.prototype.init = function() {
+    maiika.Jelly.prototype.init = function() {
         for (var i = 0; i < this.pathSides; i++) {
             var theta = (Math.PI * 2) / this.pathSides;
             var angle = theta * i;
@@ -131,19 +153,17 @@ Template.paperjsScreen.rendered = function() {
         this.path.style = this.pathStyle;
         this.group.addChild(this.path);
 
-
         // Create tentacles
         this.tentacles = [this.numTentacles];
         for (var t = 0; t < this.numTentacles; t++) {
-            this.tentacles[t] = new NARDOVE.Tentacle(7, 4);
+            this.tentacles[t] = new maiika.Tentacle(7, 4);
             this.tentacles[t].init();
             this.tentacles[t].path.strokeColor = this.path.strokeColor;
             this.tentacles[t].path.strokeWidth = this.path.strokeWidth;
         }
-    }
+    };
 
-
-    NARDOVE.Jelly.prototype.update = function(event) {
+    maiika.Jelly.prototype.update = function(event) {
         this.lastLocation = this.location.clone();
         this.lastOrientation = this.orientation;
 
@@ -154,11 +174,12 @@ Template.paperjsScreen.rendered = function() {
         this.location.x += this.velocity.x;
         this.location.y += this.velocity.y;
 
+        this.text.position = this.location;
+
         this.acceleration.length = 0;
 
         // this.path.position = this.location.clone();
         this.group.position = this.location.clone();
-
 
         // Rotation alignment
         var locVector = new Point(this.location.x - this.lastLocation.x,
@@ -183,14 +204,13 @@ Template.paperjsScreen.rendered = function() {
             this.tentacles[t].update(this.orientation);
         }
 
-
         this.path.smooth();
         this.wander();
         this.checkBounds();
     };
 
 
-    NARDOVE.Jelly.prototype.steer = function(target, slowdown) {
+    maiika.Jelly.prototype.steer = function(target, slowdown) {
         var steer;
         var desired	= new Point(target.x - this.location.x, target.y - this.location.y);
         var dist = desired.length;
@@ -213,14 +233,14 @@ Template.paperjsScreen.rendered = function() {
     };
 
 
-    NARDOVE.Jelly.prototype.seek = function(target) {
+    maiika.Jelly.prototype.seek = function(target) {
         var steer = this.steer(target, false);
         this.acceleration.x += steer.x;
         this.acceleration.y += steer.y;
     };
 
 
-    NARDOVE.Jelly.prototype.wander = function() {
+    maiika.Jelly.prototype.wander = function() {
         var wanderR = 5;
         var wanderD	= 100;
         var change = 0.05;
@@ -242,7 +262,7 @@ Template.paperjsScreen.rendered = function() {
     };
 
 
-    NARDOVE.Jelly.prototype.checkBounds = function() {
+    maiika.Jelly.prototype.checkBounds = function() {
         var offset = 60;
         if (this.location.x < -offset) {
             this.location.x = view.size.width + offset;
@@ -271,7 +291,7 @@ Template.paperjsScreen.rendered = function() {
     };
 
 
-    NARDOVE.Tentacle = function(segments, length) {
+    maiika.Tentacle = function(segments, length) {
         this.anchor = new Segment();
         this.path = new Path();
         this.numSegments = segments;
@@ -279,7 +299,7 @@ Template.paperjsScreen.rendered = function() {
     };
 
 
-    NARDOVE.Tentacle.prototype.init = function() {
+    maiika.Tentacle.prototype.init = function() {
         for (var i = 0; i < this.numSegments; i++) {
             this.path.add(new Point(0, i * this.segmentLength));
         }
@@ -290,7 +310,7 @@ Template.paperjsScreen.rendered = function() {
     };
 
 
-    NARDOVE.Tentacle.prototype.update = function(orientation) {
+    maiika.Tentacle.prototype.update = function(orientation) {
         this.path.segments[1].point = this.anchor.point;
 
         var dx = this.anchor.point.x - this.path.segments[1].point.x;
@@ -312,7 +332,6 @@ Template.paperjsScreen.rendered = function() {
             }
         }
     };
-
 };
 
 Template.paperjsScreen.helpers({
