@@ -4,12 +4,12 @@ groupTogether = false;
 playing = false;
 
 maiika.Jelly = function (id, radius, resolution, ideaData) {
-    this.path = new Path();
+    this.path = new paper.Path();
     this.pathRadius = radius;
     this.pathSides = resolution;
     this.pathPoints = [this.pathSides];
     this.pathPointsNormals = [this.pathSides];
-    this.group = new Group();
+    this.group = new paper.Group();
     this.ideaData = ideaData;
 
     // Colours courtesy of deliquescence:
@@ -40,9 +40,9 @@ maiika.Jelly = function (id, radius, resolution, ideaData) {
         fillColor: this.colours[id].f
     };
 
-    this.location = new Point(-50, Math.random() * view.size.height);
-    this.velocity = new Point(0, 0);
-    this.acceleration = new Point(0, 0);
+    this.location = new paper.Point(-50, Math.random() * view.size.height);
+    this.velocity = new paper.Point(0, 0);
+    this.acceleration = new paper.Point(0, 0);
 
     this.maxSpeed = Math.random() * 0.1 + 0.15;
     this.maxTravelSpeed = this.maxSpeed * 3.5;
@@ -52,7 +52,7 @@ maiika.Jelly = function (id, radius, resolution, ideaData) {
     this.lastOrientation = 0;
     this.numTentacles = 0;
 
-    this.text = new PointText(this.location);
+    this.text = new paper.PointText(this.location);
     this.text.justification = 'center';
     this.text.fillColor = 'white';
     this.text.content = ideaData.text;
@@ -76,7 +76,7 @@ maiika.Jelly.prototype.init = function () {
             this.numTentacles++;
         }
 
-        var point = new Point(x, y);
+        var point = new paper.Point(x, y);
 
         this.path.add(point);
         this.pathPoints[i] = point.clone();
@@ -117,7 +117,7 @@ maiika.Jelly.prototype.update = function (event) {
     this.group.position = this.location.clone();
 
     // Rotation alignment
-    var locVector = new Point(this.location.x - this.lastLocation.x,
+    var locVector = new paper.Point(this.location.x - this.lastLocation.x,
         this.location.y - this.lastLocation.y);
     this.orientation = locVector.angle + 90;
     // this.path.rotate(this.orientation - this.lastOrientation);
@@ -147,7 +147,7 @@ maiika.Jelly.prototype.update = function (event) {
 
 maiika.Jelly.prototype.steer = function (target, slowdown) {
     var steer;
-    var desired = new Point(target.x - this.location.x, target.y - this.location.y);
+    var desired = new paper.Point(target.x - this.location.x, target.y - this.location.y);
     var dist = desired.length;
 
     if (dist > 0) {
@@ -158,11 +158,11 @@ maiika.Jelly.prototype.steer = function (target, slowdown) {
             desired.length = this.maxTravelSpeed;
         }
 
-        steer = new Point(desired.x - this.velocity.x, desired.y - this.velocity.y);
+        steer = new paper.Point(desired.x - this.velocity.x, desired.y - this.velocity.y);
         steer.length = Math.min(this.maxForce, steer.length);
     }
     else {
-        steer = new Point(0, 0);
+        steer = new paper.Point(0, 0);
     }
     return steer;
 };
@@ -189,9 +189,9 @@ maiika.Jelly.prototype.wander = function () {
     circleLocation.x += this.location.x;
     circleLocation.y += this.location.y;
 
-    var circleOffset = new Point(wanderR * Math.cos(this.wanderTheta), wanderR * Math.sin(this.wanderTheta));
+    var circleOffset = new paper.Point(wanderR * Math.cos(this.wanderTheta), wanderR * Math.sin(this.wanderTheta));
 
-    var target = new Point(circleLocation.x + circleOffset.x, circleLocation.y + circleOffset.y);
+    var target = new paper.Point(circleLocation.x + circleOffset.x, circleLocation.y + circleOffset.y);
 
     this.seek(target);
 };
@@ -200,24 +200,24 @@ maiika.Jelly.prototype.wander = function () {
 maiika.Jelly.prototype.checkBounds = function () {
     var offset = 60;
     if (this.location.x < -offset) {
-        this.location.x = view.size.width + offset;
+        this.location.x = paper.view.size.width + offset;
         for (var t = 0; t < this.numTentacles; t++) {
             this.tentacles[t].path.position = this.location.clone();
         }
     }
-    if (this.location.x > view.size.width + offset) {
+    if (this.location.x > paper.view.size.width + offset) {
         this.location.x = -offset;
         for (t = 0; t < this.numTentacles; t++) {
             this.tentacles[t].path.position = this.location.clone();
         }
     }
     if (this.location.y < -offset) {
-        this.location.y = view.size.height + offset;
+        this.location.y = paper.view.size.height + offset;
         for (t = 0; t < this.numTentacles; t++) {
             this.tentacles[t].path.position = this.location.clone();
         }
     }
-    if (this.location.y > view.size.height + offset) {
+    if (this.location.y > paper.view.size.height + offset) {
         this.location.y = -offset;
         for (t = 0; t < this.numTentacles; t++) {
             this.tentacles[t].path.position = this.location.clone();
@@ -227,8 +227,8 @@ maiika.Jelly.prototype.checkBounds = function () {
 
 
 maiika.Tentacle = function (segments, length) {
-    this.anchor = new Segment();
-    this.path = new Path();
+    this.anchor = new paper.Segment();
+    this.path = new paper.Path();
     this.numSegments = segments;
     this.segmentLength = Math.random() + length - 1;
 };
@@ -236,7 +236,7 @@ maiika.Tentacle = function (segments, length) {
 
 maiika.Tentacle.prototype.init = function () {
     for (var i = 0; i < this.numSegments; i++) {
-        this.path.add(new Point(0, i * this.segmentLength));
+        this.path.add(new paper.Point(0, i * this.segmentLength));
     }
 
     this.path.strokeCap = 'round';
@@ -258,7 +258,7 @@ maiika.Tentacle.prototype.update = function (orientation) {
     for (var i = 2; i < this.numSegments; i++) {
         var px = this.path.segments[i].point.x - this.path.segments[i - 2].point.x;
         var py = this.path.segments[i].point.y - this.path.segments[i - 2].point.y;
-        var pt = new Point(px, py);
+        var pt = new paper.Point(px, py);
         var len = pt.length;
 
         if (len > 0.0) {
@@ -286,7 +286,7 @@ maiika.Boid = function (position, maxSpeed, maxForce, idea) {
     this.createItems();
 };
 
-maiika.Boid.prototype.run = function (boids) {
+maiika.Boid.prototype.update = function (boids) {
     this.lastLoc = this.position.clone();
     if (!groupTogether) {
         this.flock(boids);
@@ -294,7 +294,7 @@ maiika.Boid.prototype.run = function (boids) {
         this.align(boids);
     }
     this.borders();
-    this.update();
+    this.updateParameters();
     this.calculateTail();
     this.moveHead();
 };
@@ -331,19 +331,26 @@ maiika.Boid.prototype.calculateTail = function () {
 
 maiika.Boid.prototype.createItems = function () {
 
+    this.text = new paper.PointText(new paper.Point());
+    this.text.content = this.idea;
+    this.text.fontSize = "12px";
+
     this.head = new paper.Shape.Ellipse({
         center: [0, 0],
-        size: [13, 8],
+        size: [this.text.handleBounds.width + 10, this.text.handleBounds.height + 10],
         fillColor: 'black'
     });
+    this.text.remove();
 
     this.path = new paper.Path({
         strokeColor: 'black',
         strokeWidth: 2,
         strokeCap: 'round'
     });
-    for (var i = 0; i < this.amount; i++)
+
+    for (var i = 0; i < this.amount; i++) {
         this.path.add(new paper.Point());
+    }
 
     this.shortPath = new paper.Path({
         strokeColor: 'black',
@@ -351,13 +358,14 @@ maiika.Boid.prototype.createItems = function () {
         strokeCap: 'round'
     });
 
+    for (i = 0; i < Math.min(3, this.amount); i++) {
+        this.shortPath.add(new paper.Point());
+    }
+
     this.text = new paper.PointText(new paper.Point());
-    this.text.fillColor = 'black';
     this.text.content = this.idea;
     this.text.fontSize = "12px";
-
-    for (var i = 0; i < Math.min(3, this.amount); i++)
-        this.shortPath.add(new paper.Point());
+    this.text.fillColor = 'white';
 };
 
 maiika.Boid.prototype.moveHead = function () {
@@ -383,7 +391,7 @@ maiika.Boid.prototype.flock = function (boids) {
     this.acceleration.y += cohesion.y;
 };
 
-maiika.Boid.prototype.update = function () {
+maiika.Boid.prototype.updateParameters = function () {
     // Update velocity
     this.vector.x += this.acceleration.x;
     this.vector.y += this.acceleration.y;
@@ -538,180 +546,183 @@ maiika.Boid.prototype.cohesion = function (boids) {
 };
 
 
-maiika.moveStars = function() {
+maiika.Stars = function() {
     // The amount of symbol we want to place;
-    var count = 50;
-
+    this.count = 50;
     // Create a symbol, which we will use to place instances of later:
-    var path = new paper.Path.Circle({
+    this.path = new paper.Path.Circle({
         center: new paper.Point(0, 0),
         radius: 5,
         fillColor: 'white',
         strokeColor: 'black'
     });
-
-    var symbol = new paper.Symbol(path);
-
-    // Place the instances of the symbol:
-    for (var i = 0; i < count; i++) {
-        // The center position is a random point in the view:
-        var center = paper.Point.random();
-        center.x *= paper.view.size.x;
-        center.y *= paper.view.size.y;
-        var placed = symbol.place(center);
-        placed.scale(i / count + 0.01);
-        placed.data = {
-            vector: new paper.Point({
-                angle: Math.random() * 360,
-                length : (i / count) * Math.random() / 5
-            })
-        };
-    }
-
-    var vector = new paper.Point({
+    this.symbol = new paper.Symbol(this.path);
+    this.vector = new paper.Point({
         angle: 45,
         length: 0
     });
-
-    function keepInView(item) {
-        var position = item.position.clone();
-        var viewBounds = paper.view.bounds;
-        var itemBounds = item.bounds;
-
-        if (position.isInside(viewBounds)) {
-            return;
-        }
-
-        if (position.x > viewBounds.width + 5) {
-            position.x = -item.bounds.width;
-        }
-
-        if (position.x < -itemBounds.width - 5) {
-            position.x = viewBounds.width;
-        }
-
-        if (position.y > viewBounds.height + 5) {
-            position.y = -itemBounds.height;
-        }
-
-        if (position.y < -itemBounds.height - 5) {
-            position.y = viewBounds.height
-        }
-
-    }
-
-    return function(vector) {
-        // Run through the active layer's children list and change
-        // the position of the placed symbols:
-
-        console.log(vector);
-
-        var layer = paper.project.activeLayer;
-        for (var i = 0; i < count; i++) {
-            var item = layer.children[i];
-            var size = item.bounds.size;
-            var length = vector.length / 10 * size.width / 10;
-            item.position.x += vector.normalize(length).x + item.data.vector.x;
-            item.position.y += vector.normalize(length).y + item.data.vector.y;
-            keepInView(item);
-        }
-    };
+    this.init();
 };
 
-maiika.moveRainbow = function() {
-    var paths = [];
-    var colors = ['red', 'orange', 'yellow', 'lime', 'blue', 'purple'];
-    for (var i = 0; i < colors.length; i++) {
+maiika.Stars.prototype.init = function() {
+
+    // Place the instances of the symbol:
+    for (var i = 0; i < this.count; i++) {
+        // The center position is a random point in the view:
+        var center = paper.Point.random();
+        center.x *= paper.view.size._width;
+        center.y *= paper.view.size._height;
+
+        var placed = this.symbol.place(center);
+        placed.scale(i / this.count + 0.01);
+        placed.data = {
+            vector: new paper.Point({
+                angle: Math.random() * 360,
+                length : (i / this.count) * Math.random() / 5
+            })
+
+        };
+    }
+};
+
+maiika.Stars.prototype.keepInView = function(item) {
+    var position = item.position.clone();
+
+    var viewBounds = paper.view.bounds;
+    var itemBounds = item.bounds;
+
+    if (position.isInside(viewBounds)) {
+        return;
+    }
+
+    if (position.x > viewBounds.width + 5) {
+        position.x = -item.bounds.width;
+    }
+
+    if (position.x < -itemBounds.width - 5) {
+        position.x = viewBounds.width;
+    }
+
+    if (position.y > viewBounds.height + 5) {
+        position.y = -itemBounds.height;
+    }
+
+    if (position.y < -itemBounds.height - 5) {
+        position.y = viewBounds.height
+    }
+};
+
+maiika.Stars.prototype.update = function(vector) {
+    // Run through the active layer's children list and change
+    // the position of the placed symbols:
+    for (var i = 0; i < this.count; i++) {
+        var item = this.symbol._boundsCache.list[i];
+        var size = item.bounds.size;
+        var length = vector.length / 10 * size.width / 10;
+
+        item.position.x += vector.normalize(length).x + item.data.vector.x;
+        item.position.y += vector.normalize(length).y + item.data.vector.y;
+
+        this.keepInView(item);
+    }
+};
+
+maiika.Rainbow = function() {
+    this.paths = [];
+    this.colors = ['red', 'orange', 'yellow', 'lime', 'blue', 'purple'];
+    for (var i = 0; i < this.colors.length; i++) {
         var path = new paper.Path({
-            fillColor: colors[i]
+            fillColor: this.colors[i]
         });
-        paths.push(path);
+        this.paths.push(path);
     }
 
-    var count = 30;
-    var group = new paper.Group(paths);
-    var headGroup;
-    var eyePosition = new paper.Point();
-    var eyeFollow = paper.Point.random();
-    eyeFollow.x -= 0.5;
-    eyeFollow.y -= 0.5;
-    var blinkTime = 200;
-    function createHead(vector, count) {
-        var eyeVector = eyePosition.clone();
-        eyeVector.x -= eyeFollow.x;
-        eyeVector.y -= eyeFollow.y;
-        eyePosition.x -= eyeVector.x / 4;
-        eyePosition.y -= eyeVector.y / 4;
-        if (eyeVector.length < 0.00001) {
-            eyeFollow = paper.Point.random();
-            eyeFollow.x -= 0.5;
-            eyeFollow.y -= 0.5;
-        }
-        if (headGroup)
-            headGroup.remove();
-        var top = paths[0].lastSegment.point.clone();
-        var bottom = paths[paths.length - 1].firstSegment.point.clone();
-        var radius = (bottom - top).length / 2;
-        var circle = new paper.Path.Circle({
-            center: top + (bottom - top) / 2,
-            radius: radius,
-            fillColor: 'black'
-        });
-        circle.scale(vector.length / 100, 1);
-        circle.rotate(vector.angle, circle.center);
+    this.count = 30;
+    this.group = new paper.Group(this.paths);
+    this.eyePosition = new paper.Point();
+    this.eyeFollow = paper.Point.random();
+    this.eyeFollow.x -= 0.5;
+    this.eyeFollow.y -= 0.5;
+    this.blinkTime = 200;
+};
 
-        innerCircle = circle.clone();
-        innerCircle.scale(0.5);
-        innerCircle.fillColor = (count % blinkTime < 3)
-        || (count % (blinkTime + 5) < 3) ? 'black' : 'white';
-        if (count % (blinkTime + 40) == 0) {
-            blinkTime = Math.round(Math.random() * 40) + 200;
+maiika.Rainbow.prototype.update = function(vector2, event, position) {
+    var vector = paper.view.center.clone();
+    vector.x -= position.x;
+    vector.x /= 10;
+    vector.y -= position.y;
+    vector.y /= 10;
+
+    if (vector.length < 5) {
+        vector.length = 5;
+    }
+    this.count += vector.length / 100;
+    this.group.translate(vector);
+    var rotated = vector.rotate(90);
+    var middle = this.paths.length / 2;
+    for (var j = 0; j < this.paths.length; j++) {
+        var path = this.paths[j];
+        var nyanSwing = playing ? Math.sin(event.count / 2) * vector.length : 1;
+        var unitLength = vector.length * (2 + Math.sin(event.count / 10)) / 2;
+        var length = (j - middle) * unitLength + nyanSwing;
+        var top = paper.view.center.clone();
+        top.x += rotated.normalize(length).x;
+        top.y += rotated.normalize(length).y;
+        var bottom = paper.view.center.clone();
+        bottom.x += rotated.normalize(length + unitLength).x;
+        bottom.y += rotated.normalize(length + unitLength).y;
+        path.add(top);
+        path.insert(0, bottom);
+        if (path.segments.length > 200) {
+            var index = Math.round(path.segments.length / 2);
+            path.segments[index].remove();
+            path.segments[index - 1].remove();
         }
-        var eye = circle.clone();
-        eye.position.x += eyePosition.x * radius;
-        eye.position.y += eyePosition.y * radius;
-        eye.scale(0.15, innerCircle.position);
-        eye.fillColor = 'black';
-        headGroup = new paper.Group(circle, innerCircle, eye);
+        path.smooth();
+    }
+    this.createHead(vector, event.count);
+    //if (mediaElement) {
+    //    mediaElement.setVolume(vector.length / 200);
+    //}
+};
+
+maiika.Rainbow.prototype.createHead = function (vector, count) {
+    var eyeVector = this.eyePosition.clone();
+    eyeVector.x -= this.eyeFollow.x;
+    eyeVector.y -= this.eyeFollow.y;
+    this.eyePosition.x -= eyeVector.x / 4;
+    this.eyePosition.y -= eyeVector.y / 4;
+    if (eyeVector.length < 0.00001) {
+        this.eyeFollow = paper.Point.random();
+        this.eyeFollow.x -= 0.5;
+        this.eyeFollow.y -= 0.5;
+    }
+    if (this.headGroup) {
+        this.headGroup.remove();
     }
 
-    return function(vector, event) {
-        var vector = view.center.clone();
-        vector.x -= position.x;
-        vector.x /= 10;
-        vector.y -= position.y;
-        vector.y /= 10;
+    var top = this.paths[0].getLastSegment().point.clone();
+    var bottom = this.paths[this.paths.length - 1].getFirstSegment().point.clone();
+    var radius = (bottom - top).length / 2;
+    var circle = new paper.Path.Circle({
+        center: top + (bottom - top) / 2,
+        radius: radius,
+        fillColor: 'black'
+    });
+    circle.scale(vector.length / 100, 1);
+    circle.rotate(vector.angle, circle.center);
 
-        if (vector.length < 5) {
-            vector.length = 5;
-        }
-        count += vector.length / 100;
-        group.translate(vector);
-        var rotated = vector.rotate(90);
-        var middle = paths.length / 2;
-        for (var j = 0; j < paths.length; j++) {
-            var path = paths[j];
-            var nyanSwing = playing ? Math.sin(event.count / 2) * vector.length : 1;
-            var unitLength = vector.length * (2 + Math.sin(event.count / 10)) / 2;
-            var length = (j - middle) * unitLength + nyanSwing;
-            var top = paper.view.center.clone();
-            top.x += rotated.normalize(length).x;
-            top.y += rotated.normalize(length).y;
-            var bottom = paper.view.center.clone();
-            bottom.x += rotated.normalize(length + unitLength).x;
-            bottom.y += rotated.normalize(length + unitLength).y;
-            path.add(top);
-            path.insert(0, bottom);
-            if (path.segments.length > 200) {
-                var index = Math.round(path.segments.length / 2);
-                path.segments[index].remove();
-                path.segments[index - 1].remove();
-            }
-            path.smooth();
-        }
-        createHead(vector, event.count);
-        //if (mediaElement) {
-        //    mediaElement.setVolume(vector.length / 200);
-        //}
+    var innerCircle = circle.clone();
+    innerCircle.scale(0.5);
+    innerCircle.fillColor = (count % this.blinkTime < 3)
+    || (count % (this.blinkTime + 5) < 3) ? 'black' : 'white';
+    if (count % (this.blinkTime + 40) == 0) {
+        this.blinkTime = Math.round(Math.random() * 40) + 200;
     }
+    var eye = circle.clone();
+    eye.position.x += this.eyePosition.x * radius;
+    eye.position.y += this.eyePosition.y * radius;
+    eye.scale(0.15, innerCircle.position);
+    eye.fillColor = 'black';
+    this.headGroup = new paper.Group(circle, innerCircle, eye);
 };

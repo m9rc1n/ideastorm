@@ -81,14 +81,17 @@ Template.paperjsScreen.rendered = function () {
             }
         };
 
+        var vector = new paper.Point();
+        vector.x = (paper.view.center.x - position.x) / 10;
+        vector.y = (paper.view.center.y - position.y) / 10;
+        var stars = new maiika.Stars(new paper.Point(vector.x * 3, vector.y * 3));
+        var rainbow = new maiika.Rainbow();
+
         maiika.drawRainbow = function (event) {
             position.x += (mousePos.x - position.x) / 10;
             position.y += (mousePos.y - position.y) / 10;
-            var vector = new paper.Point();
-            vector.x = (paper.view.center.x - position.x) / 10;
-            vector.y = (paper.view.center.y - position.y) / 10;
-            maiika.moveStars(new paper.Point(vector.x * 3, vector.y * 3));
-            maiika.moveRainbow(vector, event);
+            stars.update(vector);
+            rainbow.update(vector, event, position);
         };
 
         maiika.drawTadpoles = function (event) {
@@ -100,7 +103,7 @@ Template.paperjsScreen.rendered = function () {
                     if (point)
                         boids[i].arrive(point);
                 }
-                boids[i].run(boids);
+                boids[i].update(boids);
             }
         };
 
