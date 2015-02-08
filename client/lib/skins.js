@@ -1,5 +1,7 @@
 maiika = {};
 groupTogether = false;
+//mediaElement;
+playing = false;
 
 maiika.Jelly = function (id, radius, resolution, ideaData) {
     this.path = new Path();
@@ -533,4 +535,183 @@ maiika.Boid.prototype.cohesion = function (boids) {
         return this.steer(sum, false);
     }
     return sum;
+};
+
+
+maiika.moveStars = function() {
+    // The amount of symbol we want to place;
+    var count = 50;
+
+    // Create a symbol, which we will use to place instances of later:
+    var path = new paper.Path.Circle({
+        center: new paper.Point(0, 0),
+        radius: 5,
+        fillColor: 'white',
+        strokeColor: 'black'
+    });
+
+    var symbol = new paper.Symbol(path);
+
+    // Place the instances of the symbol:
+    for (var i = 0; i < count; i++) {
+        // The center position is a random point in the view:
+        var center = paper.Point.random();
+        center.x *= paper.view.size.x;
+        center.y *= paper.view.size.y;
+        var placed = symbol.place(center);
+        placed.scale(i / count + 0.01);
+        placed.data = {
+            vector: new paper.Point({
+                angle: Math.random() * 360,
+                length : (i / count) * Math.random() / 5
+            })
+        };
+    }
+
+    var vector = new paper.Point({
+        angle: 45,
+        length: 0
+    });
+
+    function keepInView(item) {
+        var position = item.position.clone();
+        var viewBounds = paper.view.bounds;
+        var itemBounds = item.bounds;
+
+        if (position.isInside(viewBounds)) {
+            return;
+        }
+
+        if (position.x > viewBounds.width + 5) {
+            position.x = -item.bounds.width;
+        }
+
+        if (position.x < -itemBounds.width - 5) {
+            position.x = viewBounds.width;
+        }
+
+        if (position.y > viewBounds.height + 5) {
+            position.y = -itemBounds.height;
+        }
+
+        if (position.y < -itemBounds.height - 5) {
+            position.y = viewBounds.height
+        }
+
+    }
+
+    return function(vector) {
+        // Run through the active layer's children list and change
+        // the position of the placed symbols:
+
+        console.log(vector);
+
+        var layer = paper.project.activeLayer;
+        for (var i = 0; i < count; i++) {
+            var item = layer.children[i];
+            var size = item.bounds.size;
+            var length = vector.length / 10 * size.width / 10;
+            item.position.x += vector.normalize(length).x + item.data.vector.x;
+            item.position.y += vector.normalize(length).y + item.data.vector.y;
+            keepInView(item);
+        }
+    };
+};
+
+maiika.moveRainbow = function() {
+    var paths = [];
+    var colors = ['red', 'orange', 'yellow', 'lime', 'blue', 'purple'];
+    for (var i = 0; i < colors.length; i++) {
+        var path = new paper.Path({
+            fillColor: colors[i]
+        });
+        paths.push(path);
+    }
+
+    var count = 30;
+    var group = new paper.Group(paths);
+    var headGroup;
+    var eyePosition = new paper.Point();
+    var eyeFollow = paper.Point.random();
+    eyeFollow.x -= 0.5;
+    eyeFollow.y -= 0.5;
+    var blinkTime = 200;
+    function createHead(vector, count) {
+        var eyeVector = eyePosition.clone();
+        eyeVector.x -= eyeFollow.x;
+        eyeVector.y -= eyeFollow.y;
+        eyePosition.x -= eyeVector.x / 4;
+        eyePosition.y -= eyeVector.y / 4;
+        if (eyeVector.length < 0.00001) {
+            eyeFollow = paper.Point.random();
+            eyeFollow.x -= 0.5;
+            eyeFollow.y -= 0.5;
+        }
+        if (headGroup)
+            headGroup.remove();
+        var top = paths[0].lastSegment.point.clone();
+        var bottom = paths[paths.length - 1].firstSegment.point.clone();
+        var radius = (bottom - top).length / 2;
+        var circle = new paper.Path.Circle({
+            center: top + (bottom - top) / 2,
+            radius: radius,
+            fillColor: 'black'
+        });
+        circle.scale(vector.length / 100, 1);
+        circle.rotate(vector.angle, circle.center);
+
+        innerCircle = circle.clone();
+        innerCircle.scale(0.5);
+        innerCircle.fillColor = (count % blinkTime < 3)
+        || (count % (blinkTime + 5) < 3) ? 'black' : 'white';
+        if (count % (blinkTime + 40) == 0) {
+            blinkTime = Math.round(Math.random() * 40) + 200;
+        }
+        var eye = circle.clone();
+        eye.position.x += eyePosition.x * radius;
+        eye.position.y += eyePosition.y * radius;
+        eye.scale(0.15, innerCircle.position);
+        eye.fillColor = 'black';
+        headGroup = new paper.Group(circle, innerCircle, eye);
+    }
+
+    return function(vector, event) {
+        var vector = view.center.clone();
+        vector.x -= position.x;
+        vector.x /= 10;
+        vector.y -= position.y;
+        vector.y /= 10;
+
+        if (vector.length < 5) {
+            vector.length = 5;
+        }
+        count += vector.length / 100;
+        group.translate(vector);
+        var rotated = vector.rotate(90);
+        var middle = paths.length / 2;
+        for (var j = 0; j < paths.length; j++) {
+            var path = paths[j];
+            var nyanSwing = playing ? Math.sin(event.count / 2) * vector.length : 1;
+            var unitLength = vector.length * (2 + Math.sin(event.count / 10)) / 2;
+            var length = (j - middle) * unitLength + nyanSwing;
+            var top = paper.view.center.clone();
+            top.x += rotated.normalize(length).x;
+            top.y += rotated.normalize(length).y;
+            var bottom = paper.view.center.clone();
+            bottom.x += rotated.normalize(length + unitLength).x;
+            bottom.y += rotated.normalize(length + unitLength).y;
+            path.add(top);
+            path.insert(0, bottom);
+            if (path.segments.length > 200) {
+                var index = Math.round(path.segments.length / 2);
+                path.segments[index].remove();
+                path.segments[index - 1].remove();
+            }
+            path.smooth();
+        }
+        createHead(vector, event.count);
+        //if (mediaElement) {
+        //    mediaElement.setVolume(vector.length / 200);
+        //}
+    }
 };

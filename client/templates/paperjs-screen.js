@@ -23,8 +23,6 @@ Template.paperjsScreen.rendered = function () {
 
     maiika.Main = (function() {
 
-        console.log("ooooooooooooooooo");
-
         paper.install(window);
         paper.setup('canvas');
 
@@ -37,6 +35,22 @@ Template.paperjsScreen.rendered = function () {
         var numJellies = 0;
         var jellyResolution = 14;
         var list = [];
+        var mousePos = paper.view.center.clone();
+        mousePos.x += paper.view.bounds.width / 3;
+        mousePos.y += 100;
+        var position = paper.view.center.clone();
+
+        //MediaElement('nyan', {
+        //    pluginPath: '/assets/mediaelement/',
+        //    success: function(me) {
+        //        mediaElement = me;
+        //        me.play();
+        //        me.addEventListener('timeupdate', function(time) {
+        //            if (me.currentTime > 3.7)
+        //                playing = true;
+        //        });
+        //    }
+        //});
 
         Todos.find({listId: listIdA}, {sort: {createdAt: -1}}).map(function (todo, index) {
             todo.index = index;
@@ -48,7 +62,7 @@ Template.paperjsScreen.rendered = function () {
 
         var jellies = [numJellies];
 
-        this.drawJellies = function (event) {
+        maiika.drawJellies = function (event) {
 
             if (event.time > addJellyTimer + 6 && jellyCounter < numJellies) {
                 jellySize = Math.random() * 10 + 40;
@@ -67,7 +81,17 @@ Template.paperjsScreen.rendered = function () {
             }
         };
 
-        this.drawTadpoles = function (event) {
+        maiika.drawRainbow = function (event) {
+            position.x += (mousePos.x - position.x) / 10;
+            position.y += (mousePos.y - position.y) / 10;
+            var vector = new paper.Point();
+            vector.x = (paper.view.center.x - position.x) / 10;
+            vector.y = (paper.view.center.y - position.y) / 10;
+            maiika.moveStars(new paper.Point(vector.x * 3, vector.y * 3));
+            maiika.moveRainbow(vector, event);
+        };
+
+        maiika.drawTadpoles = function (event) {
 
             for (var i = 0, l = boids.length; i < l; i++) {
                 if (groupTogether) {
@@ -89,14 +113,31 @@ Template.paperjsScreen.rendered = function () {
             heartPath.scale(1);
         };
 
+
+        tool.onMouseMove = function(event) {
+            mousePos = event.point.clone();
+        };
+
         tool.onMouseDown = function (event){
             groupTogether = !groupTogether;
         };
 
         tool.onKeyDown = function (event) {
             if (event.key == 'space') {
-                var layer = project.activeLayer;
+                var layer = paper.project.activeLayer;
                 layer.selected = !layer.selected;
+                return false;
+            }
+            if (event.key == 'a') {
+                paper.view.onFrame = maiika.drawJellies;
+                return false;
+            }
+            if (event.key == 's') {
+                paper.view.onFrame = maiika.drawTadpoles;
+                return false;
+            }
+            if (event.key == 'd') {
+                paper.view.onFrame = maiika.drawRainbow;
                 return false;
             }
         };
