@@ -4,7 +4,7 @@ Session.setDefault(EDITING_KEY, false);
 var firstRender = true;
 var listRenderHold = LaunchScreen.hold();
 listFadeInHold = null;
-var listIdA;
+var keyCounter = 999;
 
 Template.paperjsScreen.rendered = function () {
     paper.install(window);
@@ -17,14 +17,10 @@ Template.paperjsScreen.rendered = function () {
         // Handle for launch screen defined in app-body.js
         listRenderHold.release();
         firstRender = false;
+
     }
 
-    console.log(maiika);
-
-    maiika.Main = (function() {
-
-        paper.install(window);
-        paper.setup('canvas');
+    maiika.Main = (function () {
 
         var heartPath = new paper.Path('M514.69629,624.70313c-7.10205,-27.02441 -17.2373,-52.39453 -30.40576,-76.10059c-13.17383,-23.70703 -38.65137,-60.52246 -76.44434,-110.45801c-27.71631,-36.64355 -44.78174,-59.89355 -51.19189,-69.74414c-10.5376,-16.02979 -18.15527,-30.74951 -22.84717,-44.14893c-4.69727,-13.39893 -7.04297,-26.97021 -7.04297,-40.71289c0,-25.42432 8.47119,-46.72559 25.42383,-63.90381c16.94775,-17.17871 37.90527,-25.76758 62.87354,-25.76758c25.19287,0 47.06885,8.93262 65.62158,26.79834c13.96826,13.28662 25.30615,33.10059 34.01318,59.4375c7.55859,-25.88037 18.20898,-45.57666 31.95215,-59.09424c19.00879,-18.32178 40.99707,-27.48535 65.96484,-27.48535c24.7373,0 45.69531,8.53564 62.87305,25.5957c17.17871,17.06592 25.76855,37.39551 25.76855,60.98389c0,20.61377 -5.04102,42.08691 -15.11719,64.41895c-10.08203,22.33203 -29.54687,51.59521 -58.40723,87.78271c-37.56738,47.41211 -64.93457,86.35352 -82.11328,116.8125c-13.51758,24.0498 -23.82422,49.24902 -30.9209,75.58594z');
         var boids = [];
@@ -33,12 +29,18 @@ Template.paperjsScreen.rendered = function () {
         var addJellyTimer = 0;
         var jellyCounter = 0;
         var numJellies = 0;
+        var jellies = [];
         var jellyResolution = 14;
         var list = [];
-        var mousePos = paper.view.center.clone();
+        var mousePos = paper.view.center;
         mousePos.x += paper.view.bounds.width / 3;
         mousePos.y += 100;
-        var position = paper.view.center.clone();
+        var position = paper.view.center;
+        var vector = paper.view.center;
+        var stars;
+        var rainbow;
+
+        var groupTogether = false;
 
         //MediaElement('nyan', {
         //    pluginPath: '/assets/mediaelement/',
@@ -52,19 +54,9 @@ Template.paperjsScreen.rendered = function () {
         //    }
         //});
 
-        Todos.find({listId: listIdA}, {sort: {createdAt: -1}}).map(function (todo, index) {
-            todo.index = index;
-            var position = new paper.Point(paper.Point.random().x * paper.view.size._width, paper.Point.random().x * paper.view.size._height);
-            boids.push(new maiika.Boid(position, 2, 0.05, todo.text));
-            numJellies++;
-            list.push(todo);
-        });
+        maiika.Jelly.draw = function (event) {
 
-        var jellies = [numJellies];
-
-        maiika.drawJellies = function (event) {
-
-            if (event.time > addJellyTimer + 6 && jellyCounter < numJellies) {
+            if (event.time > addJellyTimer + 1 && jellyCounter < numJellies) {
                 jellySize = Math.random() * 10 + 40;
                 var idea = list[jellyCounter];
                 console.log(idea);
@@ -81,23 +73,43 @@ Template.paperjsScreen.rendered = function () {
             }
         };
 
-        var vector = new paper.Point();
-        vector.x = (paper.view.center.x - position.x) / 10;
-        vector.y = (paper.view.center.y - position.y) / 10;
-        var stars = new maiika.Stars(new paper.Point(vector.x * 3, vector.y * 3));
-        var rainbow = new maiika.Rainbow();
+        maiika.Jelly.start = function () {
 
-        maiika.drawRainbow = function (event) {
-            position.x += (mousePos.x - position.x) / 10;
-            position.y += (mousePos.y - position.y) / 10;
-            stars.update(vector);
-            rainbow.update(vector, event, position);
+            list = [];
+            numJellies = 0;
+            jellyCounter = 0;
+
+            Todos.find({listId: Router.current().params._id}, {sort: {createdAt: -1}}).map(function (todo, index) {
+                todo.index = index;
+                numJellies++;
+                list.push(todo);
+            });
+
+            jellies = [numJellies];
+
+            paper.view.onFrame = maiika.Jelly.draw;
         };
 
-        maiika.drawTadpoles = function (event) {
+        maiika.Rainbow.draw = function (event) {
+            position.x += (mousePos.x - position.x) / 10;
+            position.y += (mousePos.y - position.y) / 10;
+            vector.x = (paper.view.center.x - position.x) / 10;
+            vector.y = (paper.view.center.y - position.y) / 10;
+            stars.update(new paper.Point(vector.x * 3, vector.y * 3));
+            rainbow.update(event, position);
+        };
+
+        maiika.Rainbow.start = function () {
+            stars = new maiika.Stars();
+            rainbow = new maiika.Rainbow();
+            paper.view.onFrame = maiika.Rainbow.draw;
+        };
+
+        maiika.Boid.draw = function (event) {
 
             for (var i = 0, l = boids.length; i < l; i++) {
                 if (groupTogether) {
+
                     var length = ((i + event.count / 30) % l) / l * heartPath.length;
                     var point = heartPath.getPointAt(length);
                     if (point)
@@ -107,44 +119,76 @@ Template.paperjsScreen.rendered = function () {
             }
         };
 
-        view.onFrame = this.drawJellies;
-        //view.onFrame = this.drawTadpoles;
+        maiika.Boid.start = function () {
+            list = [];
+            boids = [];
+
+            Todos.find({listId: Router.current().params._id}, {sort: {createdAt: -1}}).map(function (todo, index) {
+                todo.index = index;
+                var position = new paper.Point(paper.Point.random().x * paper.view.size._width, paper.Point.random().x * paper.view.size._height);
+                boids.push(new maiika.Boid(position, 2, 0.05, todo.text));
+                list.push(todo);
+            });
+
+            paper.view.onFrame = maiika.Boid.draw;
+        };
 
         // Reposition the heart path whenever the window is resized:
-        view.onResize = function (event) {
-            heartPath.fitBounds(view.bounds);
-            heartPath.scale(1);
+        paper.view.onResize = function (event) {
+            heartPath.fitBounds(paper.view.bounds);
+            heartPath.scale(0.5);
         };
 
 
-        tool.onMouseMove = function(event) {
+        tool.onMouseMove = function (event) {
             mousePos = event.point.clone();
         };
 
-        tool.onMouseDown = function (event){
+        tool.onMouseDown = function (event) {
             groupTogether = !groupTogether;
         };
 
         tool.onKeyDown = function (event) {
-            if (event.key == 'space') {
+            if (event.key == 'up') {
                 var layer = paper.project.activeLayer;
                 layer.selected = !layer.selected;
                 return false;
             }
-            if (event.key == 'a') {
-                paper.view.onFrame = maiika.drawJellies;
+
+            function changeLayer() {
+                paper.project.activeLayer.removeChildren();
+                if (keyCounter % 3 === 0) {
+                    maiika.Jelly.start();
+                } else if (keyCounter % 3 === 1) {
+                    maiika.Boid.start();
+                } else if (keyCounter % 3 === 2) {
+                    maiika.Rainbow.start();
+                }
+            }
+
+            if (event.key == 'right') {
+                keyCounter++;
+                changeLayer();
                 return false;
             }
-            if (event.key == 's') {
-                paper.view.onFrame = maiika.drawTadpoles;
-                return false;
-            }
-            if (event.key == 'd') {
-                paper.view.onFrame = maiika.drawRainbow;
+
+            if (event.key == 'left') {
+                keyCounter--;
+                changeLayer();
                 return false;
             }
         };
     })();
+
+    reload();
+    maiika.Jelly.start();
+
+    function reload() {
+        if (!window.location.hash) {
+            window.location.href += "#zalodowano";
+            location.reload();
+        }
+    }
 };
 
 Template.paperjsScreen.helpers({
@@ -157,11 +201,9 @@ Template.paperjsScreen.helpers({
     },
 
     todos: function (listId) {
-        listIdA = listId;
 
         return Todos.find({listId: listId}, {sort: {createdAt: -1}}).map(function (todo, index) {
             todo.index = index;
-
             return todo;
         });
     }
@@ -256,4 +298,3 @@ Template.paperjsScreen.events({
         $input.val('');
     }
 });
-

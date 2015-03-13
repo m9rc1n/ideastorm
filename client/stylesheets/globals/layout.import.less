@@ -1,25 +1,25 @@
 @menu-width: 270px;
-@column: 5.55555%;
+//@column: 5.55555%;
 
 body {
   .position(absolute, 0, 0, 0, 0);
-  background-color: #315481;
-  .background-image( linear-gradient(top, #315481, #918e82 100%) );
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  //  .background-image( linear-gradient(top, #315481, #918e82 100%) );
+  background-image: url(@image-turtle2);
+  background-size: cover;
+  //  background: @color-alice-3 no-repeat fixed;
 }
 
 #container {
   .position(absolute, 0, 0, 0, 0);
 
   @media screen and (min-width: 60em) {
-    left: @column;
-    right: @column;
+//    left: @column;
+//    right: @column;
   }
 
   @media screen and (min-width: 80em) {
-    left: 2*@column;
-    right: 2*@column;
+//    left: 2*@column;
+//    right: 2*@column;
   }
 
   // Hide anything offscreen
@@ -34,7 +34,7 @@ body {
   .position(absolute, 0, 0, 0, 0);
   .transition(all 200ms ease-out);
   .transform(translate3d(0, 0, 0));
-  background: @color-tertiary;
+  //  background: @color-tertiary;
   opacity: 1;
 
   @media screen and (min-width: 40em) {
@@ -74,5 +74,7 @@ body {
   }
 
   // Hide overlay on desktop
-  @media screen and (min-width: 40em) { display: none; }
+  @media screen and (min-width: 40em) {
+    display: none;
+  }
 }

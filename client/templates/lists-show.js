@@ -7,6 +7,9 @@ var listRenderHold = LaunchScreen.hold();
 listFadeInHold = null;
 
 Template.listsShow.rendered = function () {
+
+    console.log(this);
+
     if (firstRender) {
         // Released in app-body.js
         listFadeInHold = LaunchScreen.hold();
@@ -57,7 +60,7 @@ var editList = function (list, template) {
 var saveList = function (list, template) {
     Session.set(EDITING_KEY, false);
     Lists.update(list._id, {$set: {name: template.$('[name=name]').val()}});
-}
+};
 
 var deleteList = function (list) {
     // ensure the last public list cannot be deleted.
@@ -171,5 +174,7 @@ Template.listsShow.events({
         });
         Lists.update(this._id, {$inc: {incompleteCount: 1}});
         $input.val('');
+        location.hash = "";
+        location.reload()
     }
 });

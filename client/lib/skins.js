@@ -40,7 +40,7 @@ maiika.Jelly = function (id, radius, resolution, ideaData) {
         fillColor: this.colours[id].f
     };
 
-    this.location = new paper.Point(-50, Math.random() * view.size.height);
+    this.location = new paper.Point(-50, Math.random() * paper.view.size.height);
     this.velocity = new paper.Point(0, 0);
     this.acceleration = new paper.Point(0, 0);
 
@@ -167,13 +167,11 @@ maiika.Jelly.prototype.steer = function (target, slowdown) {
     return steer;
 };
 
-
 maiika.Jelly.prototype.seek = function (target) {
     var steer = this.steer(target, false);
     this.acceleration.x += steer.x;
     this.acceleration.y += steer.y;
 };
-
 
 maiika.Jelly.prototype.wander = function () {
     var wanderR = 5;
@@ -306,6 +304,9 @@ maiika.Boid.prototype.calculateTail = function () {
     var speed = this.vector.length;
     var pieceLength = 5 + speed / 3;
     var point = this.position.clone();
+
+    point.x += this.head.size._width;
+    point.y += this.head.size._height;
     segments[0].point = shortSegments[0].point = point;
     // Chain goes the other way than the movement
     var lastVector = this.vector.clone();
@@ -333,17 +334,17 @@ maiika.Boid.prototype.createItems = function () {
 
     this.text = new paper.PointText(new paper.Point());
     this.text.content = this.idea;
-    this.text.fontSize = "12px";
 
     this.head = new paper.Shape.Ellipse({
         center: [0, 0],
         size: [this.text.handleBounds.width + 10, this.text.handleBounds.height + 10],
         fillColor: 'black'
     });
+
     this.text.remove();
 
     this.path = new paper.Path({
-        strokeColor: 'black',
+        strokeColor: '#FF69B4',
         strokeWidth: 2,
         strokeCap: 'round'
     });
@@ -353,7 +354,7 @@ maiika.Boid.prototype.createItems = function () {
     }
 
     this.shortPath = new paper.Path({
-        strokeColor: 'black',
+        strokeColor: '#FF69B4',
         strokeWidth: 4,
         strokeCap: 'round'
     });
@@ -364,7 +365,7 @@ maiika.Boid.prototype.createItems = function () {
 
     this.text = new paper.PointText(new paper.Point());
     this.text.content = this.idea;
-    this.text.fontSize = "12px";
+    //this.text.fontSize = "16px";
     this.text.fillColor = 'white';
 };
 
@@ -557,10 +558,6 @@ maiika.Stars = function() {
         strokeColor: 'black'
     });
     this.symbol = new paper.Symbol(this.path);
-    this.vector = new paper.Point({
-        angle: 45,
-        length: 0
-    });
     this.init();
 };
 
@@ -637,6 +634,10 @@ maiika.Rainbow = function() {
         this.paths.push(path);
     }
 
+    this.circle = new paper.Path.Circle();
+    this.eye = new paper.Path.Circle();
+    this.innerCircle = new paper.Path.Circle();
+    this.headGroup = new paper.Group(this.circle, this.innerCircle, this.eye);
     this.count = 30;
     this.group = new paper.Group(this.paths);
     this.eyePosition = new paper.Point();
@@ -646,7 +647,7 @@ maiika.Rainbow = function() {
     this.blinkTime = 200;
 };
 
-maiika.Rainbow.prototype.update = function(vector2, event, position) {
+maiika.Rainbow.prototype.update = function(event, position) {
     var vector = paper.view.center.clone();
     vector.x -= position.x;
     vector.x /= 10;
@@ -687,7 +688,7 @@ maiika.Rainbow.prototype.update = function(vector2, event, position) {
 };
 
 maiika.Rainbow.prototype.createHead = function (vector, count) {
-    var eyeVector = this.eyePosition.clone();
+    var eyeVector = this.eyePosition;
     eyeVector.x -= this.eyeFollow.x;
     eyeVector.y -= this.eyeFollow.y;
     this.eyePosition.x -= eyeVector.x / 4;
@@ -701,28 +702,29 @@ maiika.Rainbow.prototype.createHead = function (vector, count) {
         this.headGroup.remove();
     }
 
-    var top = this.paths[0].getLastSegment().point.clone();
-    var bottom = this.paths[this.paths.length - 1].getFirstSegment().point.clone();
+    var top = this.paths[0].getLastSegment().point;
+    var bottom = this.paths[this.paths.length - 1].getFirstSegment().point;
     var radius = (bottom - top).length / 2;
-    var circle = new paper.Path.Circle({
+    this.circle = new paper.Path.Circle({
         center: top + (bottom - top) / 2,
         radius: radius,
         fillColor: 'black'
     });
-    circle.scale(vector.length / 100, 1);
-    circle.rotate(vector.angle, circle.center);
+    this.circle.scale(vector.length / 100, 1);
+    this.circle.rotate(vector.angle, this.circle.center);
 
-    var innerCircle = circle.clone();
-    innerCircle.scale(0.5);
-    innerCircle.fillColor = (count % this.blinkTime < 3)
+    this.innerCircle = this.circle.clone();
+    this.innerCircle.scale(0.5);
+    this.innerCircle.fillColor = (count % this.blinkTime < 3)
     || (count % (this.blinkTime + 5) < 3) ? 'black' : 'white';
     if (count % (this.blinkTime + 40) == 0) {
         this.blinkTime = Math.round(Math.random() * 40) + 200;
     }
-    var eye = circle.clone();
-    eye.position.x += this.eyePosition.x * radius;
-    eye.position.y += this.eyePosition.y * radius;
-    eye.scale(0.15, innerCircle.position);
-    eye.fillColor = 'black';
-    this.headGroup = new paper.Group(circle, innerCircle, eye);
+    this.eye = this.circle.clone();
+    this.eye.position.x += this.eyePosition.x * radius;
+    this.eye.position.y += this.eyePosition.y * radius;
+    this.eye.scale(0.15, this.innerCircle.position);
+    this.eye.fillColor = 'black';
+
+    this.headGroup = new paper.Group(this.circle, this.innerCircle, this.eye);
 };
